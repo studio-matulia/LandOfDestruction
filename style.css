@@ -1,0 +1,176 @@
+body {
+    margin: 0;
+    padding: 40px;
+    background: #f0f0f0;
+    font-family: 'Times New Roman', 'Georgia', serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.screen {
+    max-width: 400px;
+    height: 80vh;
+    background: #ffffff;
+    position: relative;
+    overflow: hidden;
+}
+
+.scanlines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.02) 2px,
+        rgba(0, 0, 0, 0.02) 4px
+    );
+    pointer-events: none;
+    z-index: 5;
+}
+
+.container {
+    padding: 0px 30px 10px 30px;
+    height: calc(100% - 10px);
+    overflow-y: auto;
+    position: relative;
+}
+
+.container::-webkit-scrollbar {
+    display: none;
+}
+
+.container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.main-text {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #000000;
+    position: relative;
+    z-index: 10;
+    text-align: justify;
+    hyphens: auto;
+}
+
+.transforming-word {
+    position: relative;
+    display: inline;
+}
+
+.transforming-letter {
+    transition: none;
+    position: relative;
+    display: inline;
+}
+
+.word-fade-out {
+    opacity: 0;
+    transition: opacity 8s ease;
+}
+
+.word-fade-in {
+    opacity: 1;
+    transition: opacity 8s ease;
+}
+
+.letter-fade-out {
+    opacity: 0;
+    transition: opacity 6s ease;
+}
+
+.letter-fade-in {
+    opacity: 1;
+    transition: opacity 6s ease;
+}
+
+.screen.glitch {
+    animation: screenGlitch 0.2s ease-in-out;
+}
+
+.screen.flicker {
+    animation: flicker 0.3s ease-in-out;
+}
+
+.glitch-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+        linear-gradient(90deg, transparent 0%, rgba(255, 0, 0, 0.1) 50%, transparent 100%),
+        linear-gradient(0deg, transparent 0%, rgba(0, 255, 255, 0.1) 50%, transparent 100%);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 15;
+}
+
+.screen.glitch .glitch-overlay {
+    opacity: 1;
+}
+
+@keyframes screenGlitch {
+    0% { filter: hue-rotate(0deg); }
+    20% { filter: hue-rotate(90deg); }
+    40% { filter: hue-rotate(180deg); }
+    60% { filter: hue-rotate(270deg); }
+    80% { filter: hue-rotate(360deg); }
+    100% { filter: hue-rotate(0deg); }
+}
+
+@keyframes flicker {
+    0%, 100% { opacity: 1; }
+    20% { opacity: 0.7; }
+    40% { opacity: 0.3; }
+    60% { opacity: 0.8; }
+    80% { opacity: 0.2; }
+}
+
+.debug-info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    font-size: 10px;
+    color: #333;
+    font-family: monospace;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px;
+    border: 1px solid #333;
+}
+
+.noise {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.01;
+    background-image:
+        radial-gradient(circle, #000000 1px, transparent 1px);
+    background-size: 4px 4px;
+    animation: noiseMove 0.1s infinite linear;
+    pointer-events: none;
+    z-index: 3;
+}
+
+@keyframes noiseMove {
+    0% { transform: translate(0, 0); }
+    10% { transform: translate(-1px, 1px); }
+    20% { transform: translate(1px, -1px); }
+    30% { transform: translate(-1px, -1px); }
+    40% { transform: translate(1px, 1px); }
+    50% { transform: translate(-1px, 0); }
+    60% { transform: translate(1px, -1px); }
+    70% { transform: translate(0, 1px); }
+    80% { transform: translate(-1px, -1px); }
+    90% { transform: translate(1px, 0); }
+    100% { transform: translate(0, -1px); }
+}
