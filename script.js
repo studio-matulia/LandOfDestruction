@@ -91,55 +91,48 @@ function transformRandomWord() {
 
 function transformRandomLetter() {
     const textContainer = document.getElementById('mainText');
-    const textContent = textContainer.textContent;
-
-    // Find a random letter that can be replaced
-    const replaceablePositions = [];
-    for (let i = 0; i < textContent.length; i++) {
-        const char = textContent[i];
-        if (letterReplacements[char]) {
-            replaceablePositions.push({ position: i, char: char });
+    
+    // Get all text nodes and find replaceable characters
+    const walker = document.createTreeWalker(
+        textContainer,
+        NodeFilter.SHOW_TEXT,
+        null,
+        false
+    );
+    
+    const replaceableNodes = [];
+    let node;
+    
+    while (node = walker.nextNode()) {
+        const textContent = node.textContent;
+        for (let i = 0; i < textContent.length; i++) {
+            const char = textContent[i];
+            if (letterReplacements[char]) {
+                replaceableNodes.push({ node: node, position: i, char: char });
+            }
         }
     }
-
-    if (replaceablePositions.length > 0) {
-        const randomChoice = replaceablePositions[Math.floor(Math.random() * replaceablePositions.length)];
-        replaceLetterAtPosition(randomChoice.position, randomChoice.char);
+    
+    if (replaceableNodes.length > 0) {
+        const randomChoice = replaceableNodes[Math.floor(Math.random() * replaceableNodes.length)];
+        replaceLetterInTextNode(randomChoice.node, randomChoice.position, randomChoice.char);
     }
 }
 
-function replaceLetterAtPosition(position, originalChar) {
-    const textContainer = document.getElementById('mainText');
-    const textContent = textContainer.innerHTML;
+function replaceLetterInTextNode(textNode, position, originalChar) {
     const targetChar = letterReplacements[originalChar];
-
-    // Find the actual position in the HTML (accounting for tags)
-    let plainTextPos = 0;
-    let htmlPos = 0;
-
-    while (plainTextPos < position && htmlPos < textContent.length) {
-        if (textContent[htmlPos] === '<') {
-            // Skip HTML tag
-            while (htmlPos < textContent.length && textContent[htmlPos] !== '>') {
-                htmlPos++;
-            }
-            htmlPos++; // Skip closing >
-        } else {
-            if (textContent[htmlPos] !== '\n' && textContent[htmlPos] !== '\r') {
-                plainTextPos++;
-            }
-            htmlPos++;
-        }
-    }
-
-    // Replace the character at this position
-    if (htmlPos < textContent.length && textContent[htmlPos] === originalChar) {
-        const newHTML = textContent.substring(0, htmlPos) + targetChar + textContent.substring(htmlPos + 1);
-
-        // Fade effect
+    const textContent = textNode.textContent;
+    
+    // Verify the character is still at this position
+    if (textContent[position] === originalChar) {
+        const newText = textContent.substring(0, position) + targetChar + textContent.substring(position + 1);
+        
+        // Fade effect on the main container
+        const textContainer = document.getElementById('mainText');
         textContainer.style.opacity = '0.5';
+        
         setTimeout(() => {
-            textContainer.innerHTML = newHTML;
+            textNode.textContent = newText;
             textContainer.style.opacity = '1';
         }, 100);
     }
