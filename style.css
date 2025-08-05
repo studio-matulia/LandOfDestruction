@@ -71,15 +71,7 @@ body {
     display: inline;
 }
 
-.word-fade-out {
-    opacity: 0;
-    transition: opacity 8s ease;
-}
-
-.word-fade-in {
-    opacity: 1;
-    transition: opacity 8s ease;
-}
+/* Word fade classes removed - now using only letter corruption */
 
 .letter-fade-out {
     opacity: 0;
@@ -173,4 +165,84 @@ body {
     80% { transform: translate(-1px, -1px); }
     90% { transform: translate(1px, 0); }
     100% { transform: translate(0, -1px); }
+}
+
+/* Strikethrough and corruption effects */
+.letter-span {
+    display: inline;
+    position: relative;
+}
+
+.corrupted-letter {
+    position: relative;
+    display: inline;
+    color: #ff0000;
+    transition: color 0.3s ease;
+}
+
+.strikethrough {
+    text-decoration: line-through;
+    text-decoration-color: #ff0000;
+    text-decoration-thickness: 2px;
+    opacity: 0.7;
+    transition: opacity 0.5s ease;
+}
+
+.letter-corrupting {
+    animation: letterCorruption 0.4s ease-in-out;
+    display: inline;
+}
+
+.letter-glitch {
+    animation: letterGlitch 0.2s ease-in-out;
+    display: inline;
+}
+
+@keyframes letterCorruption {
+    0% { 
+        opacity: 1;
+        transform: scale(1);
+        color: #000000;
+    }
+    30% { 
+        opacity: 0.3;
+        transform: scale(1.2);
+        color: #ff0000;
+        filter: blur(1px);
+    }
+    70% { 
+        opacity: 0.7;
+        transform: scale(0.9);
+        color: #ff6600;
+        filter: blur(0.5px);
+    }
+    100% { 
+        opacity: 1;
+        transform: scale(1);
+        color: #ff0000;
+        filter: blur(0);
+    }
+}
+
+@keyframes letterGlitch {
+    0%, 100% { 
+        transform: translate(0, 0);
+        opacity: 1;
+    }
+    20% { 
+        transform: translate(-1px, 1px);
+        opacity: 0.8;
+    }
+    40% { 
+        transform: translate(1px, -1px);
+        opacity: 0.6;
+    }
+    60% { 
+        transform: translate(-1px, -1px);
+        opacity: 0.9;
+    }
+    80% { 
+        transform: translate(1px, 1px);
+        opacity: 0.7;
+    }
 }
