@@ -31,3 +31,9 @@ Simply open `index.html` in a web browser and move your mouse around the screen.
 - `index.html` - Main HTML structure
 - `script.js` - Core interaction logic and text transformation
 - `style.css` - Visual styling and effects
+
+## Design Considerations
+[Concept Board](https://www.tldraw.com/f/mejMuPwNZgC9DO0lJ4IcI?d=v-5344.-4026.19903.11700.W3M7jlmIwSEn1J0nVoQx3)
+
+The way typography is set has a huge impact on the visual appeal.
+Next to that we can influence the background or add layers on top of it.
