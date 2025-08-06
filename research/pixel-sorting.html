@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iterative Pixel Sorting</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 2rem;
+            text-align: center;
+        }
+        h1, p {
+            color: #fff;
+        }
+        p { max-width: 600px; color: #ccc; }
+        #controls {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background-color: #333;
+            border-radius: 8px;
+            display: flex;
+            gap: 10px;
+        }
+        label { margin-right: 10px; }
+        input, button {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+        }
+        #sortButton {
+            background-color: #007bff;
+            color: white;
+        }
+        #sortButton:hover { background-color: #0056b3; }
+        #resetButton {
+            background-color: #6c757d;
+            color: white;
+        }
+        #resetButton:hover { background-color: #5a6268; }
+        canvas {
+            border: 2px solid #555;
+            background-color: #000;
+            max-width: 90vw;
+            max-height: 80vh;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="imageLoader">Choose an image:</label>
+        <input type="file" id="imageLoader" name="imageLoader" accept="image/*"/>
+        <button id="sortButton">Apply Sort</button>
+        <button id="resetButton">Reset to Original</button>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const imageLoader = document.getElementById('imageLoader');
+        const sortButton = document.getElementById('sortButton');
+        const resetButton = document.getElementById('resetButton'); // Get the new button
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        let originalImageData = null;
+
+        imageLoader.addEventListener('change', (e) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                }
+                img.src = event.target.result;
+            }
+            reader.readAsDataURL(e.target.files[0]);
+        });
+
+        // --- MODIFIED SORT BUTTON ---
+        // It no longer resets the canvas. It sorts whatever is currently there.
+        sortButton.addEventListener('click', () => {
+            if (!originalImageData) {
+                alert('Please load an image first!');
+                return;
+            }
+            // The line that reset the canvas has been removed from here.
+            sortPixels();
+        });
+
+        // --- NEW RESET BUTTON ---
+        // This button's job is to restore the original, clean image.
+        resetButton.addEventListener('click', () => {
+            if (!originalImageData) {
+                alert('Please load an image first!');
+                return;
+            }
+            ctx.putImageData(originalImageData, 0, 0);
+            console.log('Canvas has been reset to the original image.');
+        });
+
+
+        // --- Controller Function ---
+        function sortPixels() {
+            // This function now gets the CURRENT state of the canvas, not the original.
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            const directions = ['vertical', 'horizontal', 'diagonal_down', 'diagonal_up'];
+            const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+
+            console.log(`Applying sort. Direction: ${randomDirection}`);
+
+            switch (randomDirection) {
+                case 'vertical':
+                    sortVertical(imageData);
+                    break;
+                case 'horizontal':
+                    sortHorizontal(imageData);
+                    break;
+                case 'diagonal_down':
+                    sortDiagonalDownRight(imageData);
+                    break;
+                case 'diagonal_up':
+                    sortDiagonalUpRight(imageData);
+                    break;
+            }
+
+            // Draw the newly manipulated data back to the canvas
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // --- Directional Logic (UNCHANGED) ---
+
+        function sortVertical(imageData) {
+            const { width, height } = imageData;
+            for (let x = 0; x < width; x++) {
+                const line = [];
+                for (let y = 0; y < height; y++) {
+                    line.push({ x, y });
+                }
+                processLine(line, imageData);
+            }
+        }
+
+        function sortHorizontal(imageData) {
+            const { width, height } = imageData;
+            for (let y = 0; y < height; y++) {
+                const line = [];
+                for (let x = 0; x < width; x++) {
+                    line.push({ x, y });
+                }
+                processLine(line, imageData);
+            }
+        }
+
+        function sortDiagonalDownRight(imageData) {
+            const { width, height } = imageData;
+            for (let i = 1 - height; i < width; i++) {
+                const line = [];
+                for (let j = 0; j < height; j++) {
+                    const x = i + j;
+                    const y = j;
+                    if (x >= 0 && x < width) {
+                        line.push({ x, y });
+                    }
+                }
+                if(line.length > 0) processLine(line, imageData);
+            }
+        }
+        
+        function sortDiagonalUpRight(imageData) {
+            const { width, height } = imageData;
+            for (let i = 0; i < width + height - 1; i++) {
+                const line = [];
+                for (let j = 0; j < height; j++) {
+                    const x = i - j;
+                    const y = j;
+                    if (x >= 0 && x < width) {
+                        line.push({ x, y });
+                    }
+                }
+                if(line.length > 0) processLine(line, imageData);
+            }
+        }
+
+        // --- Core Sorting Logic for a single line of pixels (UNCHANGED) ---
+
+        function processLine(lineCoords, imageData) {
+            const data = imageData.data;
+            const width = imageData.width;
+
+            const baseStartThreshold = 0.6;
+            const endThreshold = 0.2;
+            const thresholdVariance = 0.05;
+            const randomizedStartThreshold = baseStartThreshold + (Math.random() * 2 - 1) * thresholdVariance;
+            
+            let i = 0;
+            while (i < lineCoords.length) {
+                const { x, y } = lineCoords[i];
+                const brightness = getBrightnessForCoord(x, y, data, width);
+
+                if (brightness > randomizedStartThreshold) {
+                    const segmentStartIndex = i;
+                    let segmentEndIndex = i;
+
+                    for (let j = i + 1; j < lineCoords.length; j++) {
+                        const { x: sx, y: sy } = lineCoords[j];
+                        const currentBrightness = getBrightnessForCoord(sx, sy, data, width);
+                        if (currentBrightness < endThreshold) {
+                            break;
+                        }
+                        segmentEndIndex = j;
+                    }
+
+                    const segment = getPixelSegment(segmentStartIndex, segmentEndIndex, lineCoords, data, width);
+                    segment.sort((a, b) => a.brightness - b.brightness);
+                    putSegmentBack(segmentStartIndex, segment, lineCoords, data, width);
+
+                    i = segmentEndIndex + 1;
+                } else {
+                    i++;
+                }
+            }
+        }
+
+        // --- Helper Functions (UNCHANGED) ---
+
+        function getBrightnessForCoord(x, y, data, width) {
+            const index = (y * width + x) * 4;
+            return (0.299 * data[index] + 0.587 * data[index + 1] + 0.114 * data[index + 2]) / 255;
+        }
+
+        function getPixelSegment(startIndex, endIndex, lineCoords, data, width) {
+            const pixels = [];
+            for (let i = startIndex; i <= endIndex; i++) {
+                const { x, y } = lineCoords[i];
+                const index = (y * width + x) * 4;
+                const r = data[index];
+                const g = data[index + 1];
+                const b = data[index + 2];
+                const a = data[index + 3];
+                pixels.push({ r, g, b, a, brightness: getBrightnessForCoord(x, y, data, width) });
+            }
+            return pixels;
+        }
+
+        function putSegmentBack(startIndex, segment, lineCoords, data, width) {
+            for (let i = 0; i < segment.length; i++) {
+                const pixel = segment[i];
+                const { x, y } = lineCoords[startIndex + i];
+                const index = (y * width + x) * 4;
+                data[index] = pixel.r;
+                data[index + 1] = pixel.g;
+                data[index + 2] = pixel.b;
+                data[index + 3] = pixel.a;
+            }
+        }
+
+    </script>
+</body>
+</html>
