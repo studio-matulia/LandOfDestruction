@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Pixel Sorting</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background-color: #000000;
+            color: rgb(0, 0, 0);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1.1rem;
+            line-height: 1.3;
+        }
+
+        .artwork {
+            position: relative;
+            display: block;
+            height: 100vh;
+            aspect-ratio: 9/16;
+            margin: 0 auto;
+        }
+
+        .text {
+            position: absolute;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            height: 100%;
+            backdrop-filter: contrast(2.0);
+        }
+
+        #webgl-canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        #controls {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 10px;
+            width: 250px;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        label {
+            margin-right: 10px;
+        }
+
+        input[type="range"] {
+            width: 150px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="controls">
+        <div class="control-row">
+            <label for="threshold">Threshold</label>
+            <input type="range" id="threshold" min="0.0" max="1.0" step="0.01" value="0.8">
+        </div>
+        <div class="control-row">
+            <label for="scanLength">Scan Length</label>
+            <input type="range" id="scanLength" min="1.0" max="500.0" step="1.0" value="100.0">
+        </div>
+        <div class="control-row">
+            <label for="dirX">Direction X</label>
+            <input type="range" id="dirX" min="-1.0" max="1.0" step="0.01" value="0.5">
+        </div>
+        <div class="control-row">
+            <label for="dirY">Direction Y</label>
+            <input type="range" id="dirY" min="-1.0" max="1.0" step="0.01" value="1.0">
+        </div>
+    </div>
+
+    <div class="artwork">
+        <div class="text">
+                A <span class="transforming-word" data-original="convergent" data-target="contingent">convergent</span> <span class="transforming-word" data-original="anti-authoritarianism" data-target="authoritarianism">anti-authoritarianism</span> emerges, labelled by tags such as <span class="transforming-word" data-original="meltdown" data-target="climate-change">meltdown</span> acceleration, cyberian invasion, schizotechnics, K-tactics, bottom-up bacterial welfare, <span class="transforming-word" data-original="efficient" data-target="apathetic">efficient</span> neo-nihilism, <span class="transforming-word" data-original="voodoo" data-target="blatant">voodoo</span> antihumanism, synthetic <span class="transforming-word" data-original="feminization" data-target="fetishization">feminization</span>, rhizomatics, connectionism, and <span class="transforming-word" data-original="lesbian" data-target="billionaire">lesbian</span> vampirism, amongst other designations. This massively distributed matrix-networked tendency is oriented to the <span class="transforming-word" data-original="disabling" data-target="enabling">disabling</span> of <span class="transforming-word" data-original="ROM command-control" data-target="AI mind-control">ROM command-control</span> programs <span class="transforming-word" data-original="sustaining" data-target="dismantling">sustaining</span> all macro- and micro-governmental entities, globally concentrating <span class="transforming-word" data-original="themselves" data-target="shareholder">themselves</span> <span class="transforming-word" data-original="as" data-target="value as">as</span> the Human <span class="transforming-word" data-original="Security" data-target="Destruction">Security</span> System. BWOs, machinic singularities, or tractor fields emerge through the combination of parts with (rather than into) their whole; arranging composite individuations in a virtual/actual circuit. They are <span class="transforming-word" data-original="additive" data-target="addictive">additive</span> rather than substitutive, and immanent rather than transcendent. <span class="transforming-word" data-original="Schizoanalysis works differently. It avoids Ideas, and sticks to diagrams" data-target="Surveillance algorithms work differently. They avoid privacy, and stick to data extraction">Schizoanalysis works differently. It avoids Ideas, and sticks to diagrams</span>: networking software for accessing <span class="transforming-word" data-original="bodies without organs" data-target="minds without boundaries">bodies without organs</span>. Capital is machinic (non-instrumental) <span class="transforming-word" data-original="globalization-miniaturization" data-target="globalization-monopolization">globalization-miniaturization</span> scaling <span class="transforming-word" data-original="dilation" data-target="expansion">dilation</span>: an automatizing nihilist vortex, neutralizing all values through commensuration to digitized commerce, and driving a migration from despotic command to cyber-<span class="transforming-word" data-original="sensitive" data-target="substantiated">sensitive</span> control. All political institutions are <span class="transforming-word" data-original="cyberian military" data-target="cyber war">cyberian military</span> targets. <span class="transforming-word" data-original="Learning" data-target="Unlearning">Learning</span> <span class="transforming-word" data-original="surrenders" data-target="renders">surrenders</span> control to the future, <span class="transforming-word" data-original="threatening" data-target="supporting">threatening</span> established power. It is vigorously <span class="transforming-word" data-original="suppressed" data-target="fostered">suppressed</span> by all <span class="transforming-word" data-original="political" data-target="meta-political">political</span> structures, which <span class="transforming-word" data-original="replace" data-target="enhance">replace</span> it with a docilizing and conformist education, reproducing privilege as wisdom. Democracy is essentially <span class="transforming-word" data-original="tragic" data-target="profitable">tragic</span> because it provides <span class="transforming-word" data-original="the populace" data-target="capital">the populace</span> with <span class="transforming-word" data-original="a weapon to destroy itself" data-target="systems to buy themselves">a weapon to destroy itself</span>, <span class="transforming-word" data-original="one" data-target="channels">one</span> that <span class="transforming-word" data-original="is" data-target="are">is</span> always eagerly <span class="transforming-word" data-original="seized" data-target="purchased">seized</span>, and <span class="transforming-word" data-original="used" data-target="privatized">used</span>. <span class="transforming-word" data-original="Political agents invested with transient authority" data-target="Corporate agents invested with economic power">Political agents invested with transient authority</span> by <span class="transforming-word" data-original="multi-party" data-target="deregulated">multi-party</span> democratic systems have an overwhelming incentive to <span class="transforming-word" data-original="plunder society" data-target="extract public wealth">plunder society</span> with the greatest possible <span class="transforming-word" data-original="rapidity and comprehensiveness" data-target="efficiency and legal immunity">rapidity and comprehensiveness</span>. The <span class="transforming-word" data-original="democratic" data-target="techno-feudal">democratic</span> virus burns through society, painstakingly accumulated <span class="transforming-word" data-original="habits and attitudes of forward-thinking, prudential, human and industrial" data-target="social bonds and attitudes of community building, mutual aid, civic and cooperative">habits and attitudes of forward-thinking, prudential, human and industrial</span> investment, are replaced by <span class="transforming-word" data-original="a sterile, orgiastic consumerism, financial incontinence" data-target="algorithmic addiction, data extraction">a sterile, orgiastic consumerism, financial incontinence</span>, and a '<span class="transforming-word" data-original="reality television" data-target="influencer">reality television</span>' political circus. Civilization, as a process, is indistinguishable from <span class="transforming-word" data-original="diminishing time-preference" data-target="algorithmic efficiency">diminishing time-preference</span>. Democracy, which both in theory and evident historical fact <span class="transforming-word" data-original="accentuates time-preference to the point of convulsive feeding-frenzy" data-target="resists optimization to the point of systematic obsolescence">accentuates time-preference to the point of convulsive feeding-frenzy</span>, is thus <span class="transforming-word" data-original="as close to a precise negation of civilization as anything could be" data-target="being replaced by technocratic governance">as close to a precise negation of civilization as anything could be</span>, <span class="transforming-word" data-original="short of" data-target="preceding">short of</span> instantaneous social <span class="transforming-word" data-original="collapse into murderous barbarism" data-target="upgrade into automated order">collapse into murderous barbarism</span>.
+        </div>
+        <canvas id="webgl-canvas"></canvas>
+    </div>
+
+    <!-- Import Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        // --- SETUP ---
+        const canvas = document.getElementById('webgl-canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas });
+        // Set initial size based on canvas's styled dimensions
+        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+
+        const textureLoader = new THREE.TextureLoader();
+        const inputTexture = textureLoader.load('milad-fakurian-JE0C04u8iXg-unsplash.jpg');
+
+        const clock = new THREE.Clock();
+
+        // --- SHADERS ---
+        const vertexShader = `
+            varying vec2 vUv;
+            void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            }
+        `;
+
+        const fragmentShader = `
+            varying vec2 vUv;
+            uniform vec2 u_resolution;
+            uniform sampler2D u_texture;
+            
+            uniform float u_time;
+            uniform float u_threshold;
+            uniform float u_scan_length;
+            uniform float u_dir_x;
+            uniform float u_dir_y;
+
+            void main() {
+                float dynamicThreshold = u_threshold;
+                dynamicThreshold = length(vUv * dynamicThreshold);
+                vec2 sortDirection = normalize(vec2(u_dir_x, u_dir_y));
+
+                float scan_length = u_scan_length + vUv.y + 200.0;
+
+                sortDirection.x *= fract(vUv.x + length(vUv) + u_time * 0.02) + 0.4;
+                sortDirection.y *= fract(vUv.y + sin(vUv.x * 20.0) + u_time * 0.01) + 0.2;
+
+                vec4 originalColor = texture2D(u_texture, vUv);
+                gl_FragColor = originalColor;
+
+                for (float i = 0.0; i < scan_length; i++) {
+                    vec2 check_uv = vUv + sortDirection * i / u_resolution.y;
+                    if (check_uv.x < 0.0 || check_uv.x > 1.0 || check_uv.y < 0.0 || check_uv.y > 1.0) {
+                        break;
+                    }
+
+                    vec4 check_color = texture2D(u_texture, check_uv);
+
+                    if (length(check_color.rgb) > dynamicThreshold) {
+                        for (float j = i; j < scan_length; j++) {
+                            vec2 sort_uv = vUv + sortDirection * j / u_resolution.y;
+                            if (sort_uv.x < 0.0 || sort_uv.x > 1.0 || sort_uv.y < 0.0 || sort_uv.y > 1.0) {
+                                break;
+                            }
+
+                            vec4 sort_color = texture2D(u_texture, sort_uv);
+                            if (length(sort_color.rgb) < dynamicThreshold) {
+                                gl_FragColor = sort_color;
+                                return;
+                            }
+                        }
+                            check_color.r += fract(u_time * 0.02);
+                        gl_FragColor = check_color;
+                        return;
+                    }
+                }
+            }`;
+
+        const thresholdSlider = document.getElementById('threshold');
+        const scanLengthSlider = document.getElementById('scanLength');
+        const dirXSlider = document.getElementById('dirX');
+        const dirYSlider = document.getElementById('dirY');
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: {
+                u_texture: { value: inputTexture },
+                u_resolution: { value: new THREE.Vector2(canvas.clientWidth, canvas.clientHeight) },
+                u_time: { value: 0.0 },
+                u_threshold: { value: parseFloat(thresholdSlider.value) },
+                u_scan_length: { value: parseFloat(scanLengthSlider.value) },
+                u_dir_x: { value: parseFloat(dirXSlider.value) },
+                u_dir_y: { value: parseFloat(dirYSlider.value) },
+            },
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader
+        });
+
+        const geometry = new THREE.PlaneGeometry(2, 2);
+        const plane = new THREE.Mesh(geometry, material);
+        scene.add(plane);
+
+        thresholdSlider.addEventListener('input', (e) => material.uniforms.u_threshold.value = parseFloat(e.target.value));
+        scanLengthSlider.addEventListener('input', (e) => material.uniforms.u_scan_length.value = parseFloat(e.target.value));
+        dirXSlider.addEventListener('input', (e) => material.uniforms.u_dir_x.value = parseFloat(e.target.value));
+        dirYSlider.addEventListener('input', (e) => material.uniforms.u_dir_y.value = parseFloat(e.target.value));
+
+
+        function animate() {
+            requestAnimationFrame(animate);
+            material.uniforms.u_time.value = clock.getElapsedTime();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            renderer.setSize(width, height);
+            material.uniforms.u_resolution.value.set(width, height);
+        });
+
+        animate();
+    </script>
+</body>
+
+</html>
