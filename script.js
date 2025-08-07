@@ -9,6 +9,12 @@ let originalStates = {};
 let shiftPressed = false;
 let xPressed = false;
 
+// Breathing/cycling system variables
+let transformationDirection = 'forward'; // 'forward' or 'backward'
+let currentCycleStartTime = Date.now();
+let currentCycleDuration = getRandomCycleDuration(true); // true = forward cycle
+let transformationPhase = 1; // 1 = semantic, 2 = symbol corruption, 3 = universal decay
+
 // Letter replacement mappings for random corruption
 const letterReplacements = {
     'o': '0', 'O': '0',
@@ -808,6 +814,24 @@ const corruptionMappings = {
     }
 };
 
+// Helper functions for breathing system
+function getRandomCycleDuration(isForward) {
+    if (isForward) {
+        // Forward cycles: 8-20 minutes (in milliseconds)
+        return (8 + Math.random() * 12) * 60 * 1000;
+    } else {
+        // Backward cycles: 3-12 minutes (in milliseconds)  
+        return (3 + Math.random() * 9) * 60 * 1000;
+    }
+}
+
+function getCurrentTransformationPhase() {
+    const progress = calculateCorruptionProgress();
+    if (progress < 0.6) return 1; // Semantic phase
+    if (progress < 0.9) return 2; // Symbol corruption phase
+    return 3; // Universal decay phase
+}
+
 // Initialize corruption states for words
 function initializeCorruptionStates() {
     for (const [originalWord, mapping] of Object.entries(corruptionMappings)) {
@@ -817,7 +841,9 @@ function initializeCorruptionStates() {
             meaning: mapping.meaning,
             steps: [...mapping.steps],
             completedSteps: [],
-            isActive: false
+            isActive: false,
+            semanticComplete: false, // Track if semantic transformation is done
+            symbolComplete: false    // Track if symbol corruption is done
         };
     }
 }
@@ -1023,7 +1049,71 @@ function replaceLetterInTextNode(textNode, position, originalChar) {
     }
 }
 
-// Fade transformation function removed - now using only letter corruption
+// Reverse transformation functions for breathing system
+function reverseRandomWord() {
+    const transformingWords = document.querySelectorAll('.transforming-word');
+    const reversibleWords = [];
+
+    for (let word of transformingWords) {
+        const original = word.dataset.original;
+        if (original && corruptionMappings[original]) {
+            const state = wordCorruptionStates[original];
+            if (state && state.completedSteps.length > 0) {
+                reversibleWords.push({element: word, original: original});
+            }
+        }
+    }
+
+    if (reversibleWords.length > 0) {
+        const randomChoice = reversibleWords[Math.floor(Math.random() * reversibleWords.length)];
+        reverseWordStep(randomChoice.element, randomChoice.original);
+    }
+}
+
+function reverseWordStep(element, originalWord) {
+    const state = wordCorruptionStates[originalWord];
+    if (!state || state.completedSteps.length === 0) return;
+
+    // Get the most recent completed step to reverse
+    const stepToReverse = state.completedSteps.pop();
+    state.steps.unshift(stepToReverse); // Add back to available steps
+
+    // Apply the reversal
+    const letterSpans = element.querySelectorAll('.letter-span');
+    if (letterSpans[stepToReverse.pos]) {
+        const letterSpan = letterSpans[stepToReverse.pos];
+        
+        // Add reverse animation
+        letterSpan.classList.add('letter-corrupting');
+        
+        setTimeout(() => {
+            // Restore original character
+            const originalText = state.currentState;
+            if (stepToReverse.pos < originalText.length) {
+                letterSpan.textContent = originalText[stepToReverse.pos];
+                letterSpan.classList.remove('corrupted-letter');
+            }
+            letterSpan.classList.remove('letter-corrupting');
+        }, 200);
+    }
+}
+
+function reverseRandomLetter() {
+    // Find all corrupted letters and reverse them
+    const corruptedLetters = document.querySelectorAll('.corrupted-letter');
+    if (corruptedLetters.length > 0) {
+        const randomLetter = corruptedLetters[Math.floor(Math.random() * corruptedLetters.length)];
+        // Reverse the corruption by finding original character
+        const corrupted = randomLetter.textContent;
+        for (const [original, symbol] of Object.entries(letterReplacements)) {
+            if (symbol === corrupted) {
+                randomLetter.textContent = original;
+                randomLetter.classList.remove('corrupted-letter');
+                break;
+            }
+        }
+    }
+}
 
 function updateSystem() {
     // Randomly trigger glitches based on proximity
@@ -1032,24 +1122,99 @@ function updateSystem() {
     }
 }
 
+function calculateCorruptionProgress() {
+    // Calculate what percentage of all word transformations are completed
+    let totalWords = 0;
+    let completedWords = 0;
+    
+    for (const [originalWord, mapping] of Object.entries(corruptionMappings)) {
+        totalWords++;
+        const state = wordCorruptionStates[originalWord];
+        if (state && state.steps.length === 0) {
+            // All steps completed for this word
+            completedWords++;
+        }
+    }
+    
+    return totalWords > 0 ? completedWords / totalWords : 0;
+}
+
+function getCorruptionRatios() {
+    // Get dynamic ratios based on corruption progress
+    const progress = calculateCorruptionProgress();
+    
+    if (progress < 0.6) {
+        // Early stage: Focus on phrase transformations
+        return { phraseRatio: 0.9, letterRatio: 0.1 };
+    } else if (progress < 0.85) {
+        // Middle stage: Mixed corruption
+        return { phraseRatio: 0.7, letterRatio: 0.3 };
+    } else if (progress < 1.0) {
+        // Late stage: More random corruption
+        return { phraseRatio: 0.3, letterRatio: 0.7 };
+    } else {
+        // Post-completion: Pure digital decay
+        return { phraseRatio: 0.0, letterRatio: 1.0 };
+    }
+}
+
+function manageCycles() {
+    const now = Date.now();
+    const elapsed = now - currentCycleStartTime;
+    
+    if (elapsed >= currentCycleDuration) {
+        // Switch direction
+        transformationDirection = transformationDirection === 'forward' ? 'backward' : 'forward';
+        currentCycleStartTime = now;
+        currentCycleDuration = getRandomCycleDuration(transformationDirection === 'forward');
+        console.log(`Cycle switched to ${transformationDirection} for ${Math.round(currentCycleDuration / 60000)} minutes`);
+    }
+}
+
 function getTextTransformationRate() {
     // Text transformations happen more frequently than glitches
     // Base rate increases with distance from center (lower proximity = faster corruption)
-    const baseRate = (1 - proximityLevel) * 0.05; // Much higher than glitch rate
-    return Math.max(0.01, baseRate);
+    const baseRate = (1 - proximityLevel) * 0.08; // Increased from 0.05 to 0.08 (60% faster)
+    return Math.max(0.015, baseRate);
 }
 
 function updateTextTransformations() {
     // Skip transformations if cheat mode is active
     if (cheatModeActive) return;
     
+    // Manage breathing cycles
+    manageCycles();
+    
+    // Update debug info
+    const progress = calculateCorruptionProgress();
+    const ratios = getCorruptionRatios();
+    const timeRemaining = Math.max(0, currentCycleDuration - (Date.now() - currentCycleStartTime));
+    const minutesRemaining = Math.floor(timeRemaining / 60000);
+    const secondsRemaining = Math.floor((timeRemaining % 60000) / 1000);
+    
+    document.getElementById('corruption-progress').textContent = Math.round(progress * 100) + '%';
+    document.getElementById('phrase-ratio').textContent = Math.round(ratios.phraseRatio * 100) + '%';
+    document.getElementById('direction').textContent = transformationDirection;
+    document.getElementById('time-remaining').textContent = `${minutesRemaining}:${secondsRemaining.toString().padStart(2, '0')}`;
+    
     // Randomly trigger text transformations based on proximity
     if (Math.random() < getTextTransformationRate()) {
-        // 50% word corruption, 50% random letter corruption (more balanced)
-        if (Math.random() < 0.5) {
-            transformRandomWord();
+        // Use dynamic ratios based on corruption progress
+        if (Math.random() < ratios.phraseRatio) {
+            // Prioritize phrase transformations based on progress
+            if (transformationDirection === 'forward') {
+                transformRandomWord();
+            } else {
+                // In backward mode, reverse transformations
+                reverseRandomWord();
+            }
         } else {
-            transformRandomLetter();
+            // Handle random letter corruption
+            if (transformationDirection === 'forward') {
+                transformRandomLetter();
+            } else {
+                reverseRandomLetter();
+            }
         }
     }
 }
