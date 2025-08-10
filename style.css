@@ -5,8 +5,11 @@
 body {
     margin: 0;
     background: #000000;
-    font-family: 'Times New Roman', 'Georgia', serif;
+    font-family: Helvetica, sans-serif;
+    font-weight: 600;
     min-height: 100vh;
+    font-size: 1.4vh;
+    line-height: 1.2;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -40,20 +43,69 @@ body {
 .container {
     padding: 3vh;
     overflow-y: auto;
+     -ms-overflow-style: none;
+    scrollbar-width: none;
+
 }
 
 .container::-webkit-scrollbar {
     display: none;
 }
 
-.container {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+.grid {
+    display: grid;
+    gap: 12px;
 }
 
+.logo {
+    grid-column: 3;
+    grid-row: 1 / span 4;
+    width: auto;
+}
+
+.p1 {
+    grid-row: 1;
+    grid-column: 1 / span 2;
+}
+
+.p2 {
+    grid-row: 2;
+    grid-column: 1 / span 2;
+    padding-right: 10vh;
+}
+
+.p3 {
+    grid-row: 3;
+    grid-column: 1 / span 2;
+}
+
+.p4 {
+    grid-row: 4;
+    grid-column: 2 / span 1;
+}
+
+.p5 {
+    grid-row: 5;
+    grid-column: 2 / span 2;
+}
+
+.p6 {
+    grid-row: 6;
+    grid-column: 2 / span 2;
+}
+
+.p7 {
+    grid-row: 7;
+    grid-column: 1 / span 3;
+}
+
+.p8 {
+    grid-row: 8;
+    grid-column: 1 / span 3;
+}
+
+
 .main-text {
-    font-size: 1.6vh;
-    line-height: 1.6;
     color: #000000;
     position: relative;
     z-index: 10;
