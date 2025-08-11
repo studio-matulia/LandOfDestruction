@@ -54,13 +54,17 @@ body {
 
 .grid {
     display: grid;
-    gap: 12px;
+    gap: 14px;
+    grid-template-columns: 1fr 1fr 12vh;
 }
 
 .logo {
     grid-column: 3;
     grid-row: 1 / span 4;
-    width: auto;
+}
+
+.logo > svg {
+    width: 12vh;
 }
 
 .p1 {
