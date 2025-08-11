@@ -985,9 +985,14 @@ function wrapLettersInSpans(text) {
 }
 
 function transformRandomLetter() {
-    const textContainer = document.getElementById('mainText');
+    // Select all paragraph containers
+    const textContainers = document.querySelectorAll('.main-text');
+    if (textContainers.length === 0) return;
+
+    // Pick one random paragraph container to modify
+    const textContainer = textContainers[Math.floor(Math.random() * textContainers.length)];
     
-    // Get all text nodes and find replaceable characters
+    // Get all text nodes from the chosen container and find replaceable characters
     const walker = document.createTreeWalker(
         textContainer,
         NodeFilter.SHOW_TEXT,
@@ -1002,7 +1007,8 @@ function transformRandomLetter() {
         const textContent = node.textContent;
         for (let i = 0; i < textContent.length; i++) {
             const char = textContent[i];
-            if (letterReplacements[char]) {
+            // Only target text nodes outside of our special spans
+            if (letterReplacements[char] && !node.parentNode.classList.contains('transforming-word')) {
                 replaceableNodes.push({ node: node, position: i, char: char });
             }
         }

@@ -41,7 +41,7 @@ body {
 }
 
 .container {
-    padding: 3vh;
+    padding: 2vh;
     overflow-y: auto;
      -ms-overflow-style: none;
     scrollbar-width: none;
@@ -54,7 +54,7 @@ body {
 
 .grid {
     display: grid;
-    gap: 14px;
+    gap: 0.75rem;
     grid-template-columns: 1fr 1fr 12vh;
 }
 
