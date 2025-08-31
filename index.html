@@ -9,6 +9,8 @@
 
 <body>
     <div class="screen" id="screen">
+        <!-- Pixel sort background canvas -->
+        <canvas id="pixel-canvas"></canvas>
         <div class="scanlines"></div>
         <div class="noise"></div>
         <div class="glitch-overlay"></div>
@@ -70,6 +72,8 @@
         </div>
     </div>
 
+    <!-- Debug info hidden for cleaner presentation -->
+    <!--
     <div class="debug-info">
         <div>proximity_sensor: <span id="proximity">0.50</span></div>
         <div>transformation_rate: <span id="rate">1.0</span></div>
@@ -79,7 +83,10 @@
         <div>breathing_direction: <span id="direction">forward</span></div>
         <div>cycle_time_remaining: <span id="time-remaining">0:00</span></div>
     </div>
+    -->
 
+    <!-- Three.js for pixel sorting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

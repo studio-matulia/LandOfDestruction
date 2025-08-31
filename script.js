@@ -15,6 +15,12 @@ let currentCycleStartTime = Date.now();
 let currentCycleDuration = getRandomCycleDuration(true); // true = forward cycle
 let transformationPhase = 1; // 1 = semantic, 2 = symbol corruption, 3 = universal decay
 
+// Pixel sort variables
+let pixelSortScene, pixelSortCamera, pixelSortRenderer;
+let pixelSortMaterial;
+let pixelSortClock;
+let pixelStartTime = Date.now();
+
 // Letter replacement mappings for random corruption
 const letterReplacements = {
     'o': '0', 'O': '0',
@@ -856,7 +862,7 @@ document.addEventListener('mousemove', (e) => {
     const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2));
 
     proximityLevel = 1 - (distance / maxDistance);
-    document.getElementById('proximity').textContent = proximityLevel.toFixed(2);
+    // document.getElementById('proximity').textContent = proximityLevel.toFixed(2); // Debug hidden
 });
 
 function getGlitchFrequency() {
@@ -867,7 +873,7 @@ function getGlitchFrequency() {
 function getTransformationRate() {
     const baseRate = 1 - proximityLevel;
     const rate = Math.max(0.1, baseRate * 3);
-    document.getElementById('rate').textContent = rate.toFixed(2);
+    // document.getElementById('rate').textContent = rate.toFixed(2); // Debug hidden
     return rate;
 }
 
@@ -876,7 +882,7 @@ function triggerGlitch() {
 
     isGlitching = true;
     glitchCount++;
-    document.getElementById('glitches').textContent = glitchCount;
+    // document.getElementById('glitches').textContent = glitchCount; // Debug hidden
 
     const screen = document.getElementById('screen');
 
@@ -1198,10 +1204,11 @@ function updateTextTransformations() {
     const minutesRemaining = Math.floor(timeRemaining / 60000);
     const secondsRemaining = Math.floor((timeRemaining % 60000) / 1000);
     
-    document.getElementById('corruption-progress').textContent = Math.round(progress * 100) + '%';
-    document.getElementById('phrase-ratio').textContent = Math.round(ratios.phraseRatio * 100) + '%';
-    document.getElementById('direction').textContent = transformationDirection;
-    document.getElementById('time-remaining').textContent = `${minutesRemaining}:${secondsRemaining.toString().padStart(2, '0')}`;
+    // Debug info hidden
+    // document.getElementById('corruption-progress').textContent = Math.round(progress * 100) + '%';
+    // document.getElementById('phrase-ratio').textContent = Math.round(ratios.phraseRatio * 100) + '%';
+    // document.getElementById('direction').textContent = transformationDirection;
+    // document.getElementById('time-remaining').textContent = `${minutesRemaining}:${secondsRemaining.toString().padStart(2, '0')}`;
     
     // Randomly trigger text transformations based on proximity
     if (Math.random() < getTextTransformationRate()) {
@@ -1228,6 +1235,7 @@ function updateTextTransformations() {
 // Main loops - separate systems
 setInterval(updateSystem, 50); // Visual glitches at 20 FPS
 setInterval(updateTextTransformations, 30); // Faster text transformations at ~33 FPS
+setInterval(updatePixelSort, 16); // Pixel sort at ~60 FPS
 
 // Hotkey event listeners for cheat mode
 document.addEventListener('keydown', (e) => {
@@ -1278,11 +1286,12 @@ function activateCheatMode() {
         }
     });
     
-    // Highlight all existing corrupted letters in red
+    // Remove red highlighting - corrupted letters stay black
     const existingCorruptedLetters = document.querySelectorAll('.corrupted-letter');
     existingCorruptedLetters.forEach(span => {
-        span.style.backgroundColor = 'rgba(255, 0, 0, 0.2)'; // Red background highlight
-        span.style.boxShadow = '0 0 3px rgba(255, 0, 0, 0.5)'; // Red glow
+        // Keep corrupted letters black, no special highlighting
+        span.style.backgroundColor = '';
+        span.style.boxShadow = '';
     });
 }
 
@@ -1310,6 +1319,125 @@ function deactivateCheatMode() {
     originalStates = {};
 }
 
+// === PIXEL SORT SYSTEM ===
+
+function initPixelSort() {
+    const canvas = document.getElementById('pixel-canvas');
+    if (!canvas) {
+        console.error('Pixel canvas not found');
+        return;
+    }
+
+    console.log('Canvas dimensions:', canvas.clientWidth, canvas.clientHeight);
+    
+    // Get the screen container to match its size
+    const screen = document.getElementById('screen');
+    const screenRect = screen.getBoundingClientRect();
+    
+    // Setup Three.js scene
+    pixelSortScene = new THREE.Scene();
+    pixelSortCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    pixelSortRenderer = new THREE.WebGLRenderer({ 
+        canvas: canvas, 
+        alpha: false,  // Try without alpha first
+        antialias: false,
+        preserveDrawingBuffer: true
+    });
+    
+    // Set size to match screen dimensions
+    const width = Math.max(screenRect.width, 400);
+    const height = Math.max(screenRect.height, 700);
+    
+    pixelSortRenderer.setSize(width, height);
+    console.log('Pixel sort renderer size set to:', width, height);
+    
+    const textureLoader = new THREE.TextureLoader();
+    const inputTexture = textureLoader.load(
+        'milad-fakurian-JE0C04u8iXg-unsplash.jpg',
+        function(texture) {
+            console.log('Texture loaded successfully:', texture.image.width, texture.image.height);
+        },
+        function(progress) {
+            console.log('Loading texture progress:', progress);
+        },
+        function(error) {
+            console.error('Error loading texture:', error);
+        }
+    );
+    
+    pixelSortClock = new THREE.Clock();
+
+    // Vertex shader
+    const vertexShader = `
+        varying vec2 vUv;
+        void main() {
+            vUv = uv;
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+    `;
+
+    // Simple fragment shader to test basic rendering first
+    const fragmentShader = `
+        varying vec2 vUv;
+        uniform sampler2D u_texture;
+        uniform float u_time;
+        
+        void main() {
+            // Simple texture display with slow breathing and dim for readability
+            vec4 color = texture2D(u_texture, vUv);
+            float breathe = 0.15 + 0.05 * sin(u_time * 0.05); // Much slower breathing
+            color.rgb *= breathe; // Apply breathing effect to RGB only
+            gl_FragColor = color;
+        }`;
+
+    // Create material with simple uniforms for testing
+    pixelSortMaterial = new THREE.ShaderMaterial({
+        uniforms: {
+            u_texture: { value: inputTexture },
+            u_time: { value: 0.0 }
+        },
+        vertexShader: vertexShader,
+        fragmentShader: fragmentShader,
+        transparent: false
+    });
+
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const plane = new THREE.Mesh(geometry, pixelSortMaterial);
+    pixelSortScene.add(plane);
+
+    // Handle window resize for pixel sort canvas
+    const originalResizeHandler = window.onresize;
+    window.addEventListener('resize', () => {
+        if (originalResizeHandler) originalResizeHandler();
+        
+        const width = canvas.clientWidth;
+        const height = canvas.clientHeight;
+        
+        pixelSortRenderer.setSize(width, height);
+    });
+
+    // Initial render to test visibility
+    pixelSortRenderer.render(pixelSortScene, pixelSortCamera);
+    console.log('Pixel sort system initialized and rendered');
+}
+
+function updatePixelSort() {
+    if (!pixelSortMaterial || !pixelSortRenderer) return;
+
+    // Update time
+    pixelSortMaterial.uniforms.u_time.value = pixelSortClock.getElapsedTime();
+
+    // Render the pixel sort
+    pixelSortRenderer.render(pixelSortScene, pixelSortCamera);
+}
+
 // Initial setup
-document.getElementById('proximity').textContent = proximityLevel.toFixed(2);
+// document.getElementById('proximity').textContent = proximityLevel.toFixed(2); // Debug hidden
 initializeCorruptionStates();
+
+// Initialize pixel sort after DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPixelSort);
+} else {
+    initPixelSort();
+}
