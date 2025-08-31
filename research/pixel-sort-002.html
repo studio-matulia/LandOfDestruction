@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autonomous Pixel Sorting</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        canvas {
+            display: block;
+            height: 100%;
+            max-height: 100vh;
+            aspect-ratio: 9/16;
+            object-fit: cover;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        let currentLineIndex = 0;
+        let linesToProcess = [];
+        const linesPerFrame = 4;
+
+        window.onload = () => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                ctx.drawImage(img, 0, 0);
+
+                startNewAnimationCycle();
+            };
+
+            img.onerror = () => {
+                console.error("Error: Could not load the image. Make sure 'milad-fakurian-JE0C04u8iXg-unsplash.jpg' is in the same directory as the HTML file.");
+                ctx.fillStyle = 'white';
+                ctx.font = '20px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Image not found. See console for details.', canvas.width / 2, canvas.height / 2);
+            };
+
+            img.src = 'milad-fakurian-JE0C04u8iXg-unsplash.jpg';
+        };
+
+
+        function startNewAnimationCycle() {
+            currentLineIndex = 0;
+
+            const directions = ['vertical', 'horizontal', 'diagonal_down', 'diagonal_up'];
+            const randomDirection = directions[Math.floor(Math.random() * directions.length)];
+            console.log(`Starting new cycle. Direction: ${randomDirection}`);
+
+            linesToProcess = collectLines(randomDirection, canvas.width, canvas.height);
+
+            requestAnimationFrame(animateStep);
+        }
+
+        function animateStep() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+            const endOfBatch = Math.min(currentLineIndex + linesPerFrame, linesToProcess.length);
+            for (let i = currentLineIndex; i < endOfBatch; i++) {
+                processLine(linesToProcess[i], imageData);
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+
+            currentLineIndex += linesPerFrame;
+
+            if (currentLineIndex < linesToProcess.length) {
+                requestAnimationFrame(animateStep);
+            } else {
+                startNewAnimationCycle();
+            }
+        }
+
+        function collectLines(direction, width, height) {
+            const allLines = [];
+            switch (direction) {
+                case 'vertical':
+                    for (let x = 0; x < width; x++) {
+                        const line = [];
+                        for (let y = 0; y < height; y++) line.push({ x, y });
+                        allLines.push(line);
+                    }
+                    break;
+                case 'horizontal':
+                    for (let y = 0; y < height; y++) {
+                        const line = [];
+                        for (let x = 0; x < width; x++) line.push({ x, y });
+                        allLines.push(line);
+                    }
+                    break;
+                case 'diagonal_down':
+                    for (let i = 1 - height; i < width; i++) {
+                        const line = [];
+                        for (let j = 0; j < height; j++) {
+                            const x = i + j;
+                            const y = j;
+                            if (x >= 0 && x < width) line.push({ x, y });
+                        }
+                        if (line.length > 0) allLines.push(line);
+                    }
+                    break;
+                case 'diagonal_up':
+                    for (let i = 0; i < width + height - 1; i++) {
+                        const line = [];
+                        for (let j = 0; j < height; j++) {
+                            const x = i - j;
+                            const y = j;
+                            if (x >= 0 && x < width) line.push({ x, y });
+                        }
+                        if (line.length > 0) allLines.push(line);
+                    }
+                    break;
+            }
+            return allLines;
+        }
+
+        function processLine(lineCoords, imageData) {
+            const data = imageData.data;
+            const width = imageData.width;
+            const baseStartThreshold = 0.6;
+            const endThreshold = 0.2;
+            const thresholdVariance = 0.05;
+            const randomizedStartThreshold = baseStartThreshold + (Math.random() * 2 - 1) * thresholdVariance;
+
+            let i = 0;
+            while (i < lineCoords.length) {
+                const { x, y } = lineCoords[i];
+                const brightness = getBrightnessForCoord(x, y, data, width);
+                if (brightness > randomizedStartThreshold) {
+                    const segmentStartIndex = i;
+                    let segmentEndIndex = i;
+                    for (let j = i + 1; j < lineCoords.length; j++) {
+                        const { x: sx, y: sy } = lineCoords[j];
+                        if (getBrightnessForCoord(sx, sy, data, width) < endThreshold) break;
+                        segmentEndIndex = j;
+                    }
+                    const segment = getPixelSegment(segmentStartIndex, segmentEndIndex, lineCoords, data, width);
+                    segment.sort((a, b) => a.brightness - b.brightness);
+                    putSegmentBack(segmentStartIndex, segment, lineCoords, data, width);
+                    i = segmentEndIndex + 1;
+                } else {
+                    i++;
+                }
+            }
+        }
+
+        function getBrightnessForCoord(x, y, data, width) {
+            const index = (y * width + x) * 4;
+            return (0.299 * data[index] + 0.587 * data[index + 1] + 0.114 * data[index + 2]) / 255;
+        }
+
+        function getPixelSegment(startIndex, endIndex, lineCoords, data, width) {
+            const pixels = [];
+            for (let i = startIndex; i <= endIndex; i++) {
+                const { x, y } = lineCoords[i];
+                const index = (y * width + x) * 4;
+                pixels.push({ r: data[index], g: data[index + 1], b: data[index + 2], a: data[index + 3], brightness: getBrightnessForCoord(x, y, data, width) });
+            }
+            return pixels;
+        }
+
+        function putSegmentBack(startIndex, segment, lineCoords, data, width) {
+            for (let i = 0; i < segment.length; i++) {
+                const { x, y } = lineCoords[startIndex + i];
+                const index = (y * width + x) * 4;
+                data[index] = segment[i].r;
+                data[index + 1] = segment[i].g;
+                data[index + 2] = segment[i].b;
+                data[index + 3] = segment[i].a;
+            }
+        }
+
+    </script>
+</body>
+
+</html>
